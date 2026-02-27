@@ -6,32 +6,28 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
 
+func getBaseURL() string {
+	// Load .env file (ignore error if file doesn't exist)
+	_ = godotenv.Load()
+
+	baseURL := os.Getenv("GEMINI_BASE_URL")
+	if baseURL == "" {
+		baseURL = "https://api.gemini.com/v1"
+	}
+	return baseURL
+}
+
 func getTicker(symbol string) error {
-	err := godotenv.Load()
-	if err != nil {
-		return fmt.Errorf("error loading .env file: %w", err)
-	}
+	// Symbol should be lowercase for Gemini API
+	symbolLower := strings.ToLower(symbol)
+	url := fmt.Sprintf("%s/pubticker/%s", getBaseURL(), symbolLower)
 
-	baseURL := os.Getenv("BASE_URL")
-	apiKey := os.Getenv("API_KEY")
-
-	req, err := http.NewRequest("GET", baseURL+"/ticker", nil)
-	if err != nil {
-		return fmt.Errorf("error creating request: %w", err)
-	}
-
-	q := req.URL.Query()
-	q.Add("symbol", symbol)
-	req.URL.RawQuery = q.Encode()
-
-	req.Header.Add("X-API-Key", apiKey)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := http.Get(url)
 	if err != nil {
 		return fmt.Errorf("error making request: %w", err)
 	}
@@ -52,7 +48,23 @@ func getTicker(symbol string) error {
 }
 
 func main() {
-	if err := getTicker("BTCUSD"); err != nil {
+	args := os.Args[1:]
+
+	// Show help message
+	if len(args) > 0 && (args[0] == "--help" || args[0] == "-h") {
+		fmt.Println("Usage: go run get_ticker.go [symbol]")
+		fmt.Println("Example: go run get_ticker.go ethusd")
+		fmt.Println("Default symbol: btcusd")
+		os.Exit(0)
+	}
+
+	// Get symbol from command line or use default
+	symbol := "btcusd"
+	if len(args) > 0 {
+		symbol = args[0]
+	}
+
+	if err := getTicker(symbol); err != nil {
 		fmt.Println("Error:", err)
 	}
 }
