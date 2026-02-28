@@ -21,6 +21,43 @@ Multi-language examples demonstrating how to use the Gemini cryptocurrency excha
     └── balances.go       # Get account balances (requires auth)
 ```
 
+## Quick Start
+
+### Get Ticker (No API Key Required)
+```bash
+# Python
+python3 python/get_ticker.py btcusd
+
+# TypeScript
+npx ts-node typescript/src/getTicker.ts ethusd
+
+# Go
+go run go/get_ticker.go dogeusd
+```
+
+### Get Balances (API Key Required)
+
+1. **Add your API credentials to `.env`:**
+   ```bash
+   cp .env.example .env
+   # Edit .env and add your real GEMINI_API_KEY and GEMINI_API_SECRET
+   ```
+
+2. **Run the balances script:**
+   ```bash
+   # Python
+   cd python && pip install -r requirements.txt
+   python3 balances.py
+
+   # TypeScript
+   cd typescript && npm install
+   npx ts-node src/balances.ts
+
+   # Go
+   cd go && go mod download
+   go run balances.go
+   ```
+
 ## Getting Started
 
 ### Configuration
@@ -97,33 +134,98 @@ The `placeOrder` and `balances` examples require Gemini API credentials.
 2. **Configure Environment:**
    ```bash
    cp .env.example .env
-   # Edit .env and add your API_KEY and API_SECRET
+   # Edit .env and add your GEMINI_API_KEY and GEMINI_API_SECRET
+   ```
+
+   Your `.env` file should look like:
+   ```
+   GEMINI_BASE_URL=https://api.gemini.com/v1
+   GEMINI_API_KEY=account-xxxxxxxxxxxxxx
+   GEMINI_API_SECRET=xxxxxxxxxxxxxx
+   ```
+
+   **For testing, use the sandbox:**
+   ```
+   GEMINI_BASE_URL=https://api.sandbox.gemini.com/v1
+   GEMINI_API_KEY=your-sandbox-api-key
+   GEMINI_API_SECRET=your-sandbox-api-secret
    ```
 
 3. **Run Examples:**
 
-   **TypeScript:**
+   **Get Balances:**
+
+   TypeScript:
    ```bash
    cd typescript
    npm install
-   npx ts-node src/placeOrder.ts
    npx ts-node src/balances.ts
    ```
 
-   **Python:**
+   Python:
    ```bash
    cd python
    pip install -r requirements.txt
-   python3 place_order.py
    python3 balances.py
    ```
 
-   **Go:**
+   Go:
    ```bash
    cd go
    go mod download
-   go run place_order.go
    go run balances.go
+   ```
+
+   **Example Output:**
+   ```json
+   Account balances:
+   [
+     {
+       "type": "exchange",
+       "currency": "BTC",
+       "amount": "5.0",
+       "available": "4.5",
+       "availableForWithdrawal": "4.5",
+       "pendingWithdrawal": "0.25",
+       "pendingDeposit": "0.25"
+     },
+     {
+       "type": "exchange",
+       "currency": "USD",
+       "amount": "15000.00",
+       "available": "5000.00",
+       "availableForWithdrawal": "5000.00"
+     },
+     {
+       "type": "exchange",
+       "currency": "ETH",
+       "amount": "10.0",
+       "available": "10.0",
+       "availableForWithdrawal": "10.0"
+     }
+   ]
+
+   Total currencies: 3
+   BTC: 4.5 available (5.0 total)
+   USD: 5000.00 available (15000.00 total)
+   ETH: 10.0 available (10.0 total)
+   ```
+
+   **Response Fields:**
+   - `type`: Account type (e.g., "exchange")
+   - `currency`: Currency code (BTC, ETH, USD, etc.)
+   - `amount`: Total balance including pending
+   - `available`: Amount available for trading
+   - `availableForWithdrawal`: Amount that can be withdrawn
+   - `pendingWithdrawal`: Amount in pending withdrawals (optional)
+   - `pendingDeposit`: Amount in pending deposits (optional)
+
+   **Place Orders:**
+   ```bash
+   # Similar to balances, run the respective place_order files
+   npx ts-node src/placeOrder.ts
+   python3 place_order.py
+   go run place_order.go
    ```
 
 ## API Documentation
@@ -132,12 +234,49 @@ The `placeOrder` and `balances` examples require Gemini API credentials.
 - [Public Ticker API](https://docs.gemini.com/rest-api/#ticker)
 - [Private Endpoints](https://docs.gemini.com/rest-api/#authenticated-api-invocation)
 
-## Example Output
+## Example Outputs
+
+### Get Ticker (Public)
 
 ```bash
-$ go run get_ticker.go
+$ go run get_ticker.go btcusd
 Ticker data: map[ask:65448.39 bid:65437.93 last:65422.70 volume:map[BTC:300.93753108 USD:19688145.814587516 timestamp:1.772231493e+12]]
 ```
+
+### Get Balances (Private)
+
+```bash
+$ python3 balances.py
+Account balances:
+[
+  {
+    "type": "exchange",
+    "currency": "BTC",
+    "amount": "5.0",
+    "available": "4.5",
+    "availableForWithdrawal": "4.5"
+  }
+]
+
+Total currencies: 3
+BTC: 4.5 available (5.0 total)
+USD: 5000.00 available (15000.00 total)
+ETH: 10.0 available (10.0 total)
+```
+
+## Authentication
+
+The Gemini API uses a specific authentication method for private endpoints:
+
+1. **Payload**: Create a JSON object with `request` path and `nonce` (current timestamp in milliseconds)
+2. **Base64 Encode**: Encode the payload to base64
+3. **HMAC Signature**: Create an HMAC-SHA384 signature of the base64 payload using your API secret
+4. **Headers**: Send the request with:
+   - `X-GEMINI-APIKEY`: Your API key
+   - `X-GEMINI-PAYLOAD`: Base64 encoded payload
+   - `X-GEMINI-SIGNATURE`: Hex-encoded HMAC signature
+
+All implementations handle this authentication automatically.
 
 ## Notes
 
@@ -145,3 +284,4 @@ Ticker data: map[ask:65448.39 bid:65437.93 last:65422.70 volume:map[BTC:300.9375
 - Private endpoints require valid API credentials
 - Use the sandbox environment for testing to avoid real trades
 - All examples use lowercase symbols (e.g., `btcusd` not `BTCUSD`)
+- The balances endpoint returns all your account balances across different currencies
