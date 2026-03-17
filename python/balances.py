@@ -1,7 +1,3 @@
-import warnings
-# Suppress urllib3 OpenSSL warning before importing requests
-warnings.filterwarnings('ignore', category=Warning)
-
 import os
 import json
 import base64
@@ -62,7 +58,7 @@ def get_balances():
             print(f"{balance['currency']}: {balance['available']} available ({balance['amount']} total)")
     except requests.exceptions.RequestException as e:
         print(f'Error fetching balances: {e}')
-        if hasattr(e.response, 'text'):
+        if hasattr(e, 'response') and e.response is not None:
             print(f'Response: {e.response.text}')
 
 if __name__ == '__main__':
