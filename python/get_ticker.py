@@ -1,7 +1,3 @@
-import warnings
-# Suppress urllib3 OpenSSL warning before importing requests
-warnings.filterwarnings('ignore', category=Warning)
-
 import os
 import requests
 from dotenv import load_dotenv
